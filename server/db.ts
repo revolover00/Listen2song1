@@ -266,6 +266,14 @@ class LocalDB {
     return this.data.listeningHistory.filter(h => h.userId === userId);
   }
 
+  public getAllListeningHistory(): ListeningHistory[] {
+    return this.data.listeningHistory;
+  }
+
+  public getAllLikes(): Like[] {
+    return this.data.likes;
+  }
+
   public addListeningHistory(history: ListeningHistory) {
     this.data.listeningHistory.push(history);
     this.updateTrackStats(history.trackId, true);

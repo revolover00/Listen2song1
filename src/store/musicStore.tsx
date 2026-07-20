@@ -21,7 +21,9 @@ interface MusicContextType {
 
   // Recommendations
   recommendations: RecommendationResponse | null;
-  refreshRecommendations: () => Promise<void>;
+  refreshRecommendations: (weights?: { content: number; collaborative: number; session: number }) => Promise<void>;
+  recommendationWeights: { content: number; collaborative: number; session: number };
+  updateWeights: (w: { content: number; collaborative: number; session: number }) => void;
 
   // Search
   searchQuery: string;
@@ -83,6 +85,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(null);
   const [likes, setLikes] = useState<string[]>([]);
   const [recommendations, setRecommendations] = useState<RecommendationResponse | null>(null);
+  const [recommendationWeights, setRecommendationWeights] = useState({
+    content: 0.4,
+    collaborative: 0.4,
+    session: 0.2
+  });
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -188,7 +195,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // --- Data Fetching ---
-  const loadInitialData = async (userId: string) => {
+  const loadInitialData = async (userId: string, weights = recommendationWeights) => {
     try {
       // 1. Get tracks
       const tracksRes = await fetch('/api/tracks');
@@ -212,7 +219,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       // 4. Get recommendations
-      const recsRes = await fetch(`/api/recommendations?userId=${userId}`);
+      const recsRes = await fetch(`/api/recommendations?userId=${userId}&wContent=${weights.content}&wCollab=${weights.collaborative}&wSession=${weights.session}`);
       if (recsRes.ok) {
         const d = await recsRes.json();
         setRecommendations(d);
@@ -222,10 +229,10 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const refreshRecommendations = async () => {
-    if (!user) return;
+  const refreshRecommendations = async (customWeights = recommendationWeights) => {
+    const activeUserId = user?.id || 'user_demo';
     try {
-      const recsRes = await fetch(`/api/recommendations?userId=${user.id}`);
+      const recsRes = await fetch(`/api/recommendations?userId=${activeUserId}&wContent=${customWeights.content}&wCollab=${customWeights.collaborative}&wSession=${customWeights.session}`);
       if (recsRes.ok) {
         const d = await recsRes.json();
         setRecommendations(d);
@@ -233,6 +240,11 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {
       console.error('Refresh recommendations error:', e);
     }
+  };
+
+  const updateWeights = (newWeights: typeof recommendationWeights) => {
+    setRecommendationWeights(newWeights);
+    refreshRecommendations(newWeights);
   };
 
   // Trigger loading when user state changes
@@ -613,6 +625,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       user, login, register, logout,
       tracks, playlists, currentPlaylist, selectPlaylist, createPlaylist, addTrackToPlaylist, removeTrackFromPlaylist,
       likes, toggleLike, recommendations, refreshRecommendations,
+      recommendationWeights, updateWeights,
       searchQuery, setSearchQuery, searchResults, isSearching, triggerSearch,
       currentTrack, isPlaying, playbackState, progress, duration, volume, setVolume,
       playTrack, togglePlay, nextTrack, prevTrack, seek, shuffle, setShuffle, repeat, setRepeat, queue, history,

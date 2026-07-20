@@ -21,6 +21,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ activeTab, setActi
     isPlaying,
     togglePlay,
     recommendations,
+    recommendationWeights,
+    updateWeights,
     searchQuery,
     setSearchQuery,
     searchResults,
@@ -101,6 +103,100 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({ activeTab, setActi
               </div>
             ))}
           </div>
+
+          {/* Recommendation Tuning Panel */}
+          {recommendations && (
+            <div className="bg-[#181818]/60 border border-white/5 rounded-xl p-5 space-y-4 animate-in fade-in duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <Disc className="h-4 w-4 text-[#1db954] animate-spin-slow" />
+                    Recommender System Tuning / ضبط محرك الترشيح الهجين
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Adjust hybrid weights dynamically to customize recommendation blending.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => updateWeights({ content: 0.4, collaborative: 0.4, session: 0.2 })}
+                  className="text-xs text-[#1db954] hover:underline shrink-0 text-right self-end sm:self-center"
+                >
+                  Reset to Defaults / إعادة ضبط
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                {/* Content weight */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-gray-300">Content-Based (Tags/Acoustic)</span>
+                    <span className="text-[#1db954] font-mono">
+                      {Math.round((recommendationWeights.content / (recommendationWeights.content + recommendationWeights.collaborative + recommendationWeights.session || 1)) * 100)}%
+                    </span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={recommendationWeights.content}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateWeights({ ...recommendationWeights, content: val });
+                    }}
+                    className="w-full accent-[#1db954] cursor-pointer bg-neutral-800 h-1.5 rounded-lg appearance-none"
+                  />
+                  <p className="text-[10px] text-gray-400">Uses ListenBrainz and MusicBrainz track tags & metadata.</p>
+                </div>
+
+                {/* Collaborative weight */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-gray-300">Collaborative Filtering (MF)</span>
+                    <span className="text-[#1db954] font-mono">
+                      {Math.round((recommendationWeights.collaborative / (recommendationWeights.content + recommendationWeights.collaborative + recommendationWeights.session || 1)) * 100)}%
+                    </span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={recommendationWeights.collaborative}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateWeights({ ...recommendationWeights, collaborative: val });
+                    }}
+                    className="w-full accent-[#1db954] cursor-pointer bg-neutral-800 h-1.5 rounded-lg appearance-none"
+                  />
+                  <p className="text-[10px] text-gray-400">Predicts via matrix factorization of all playbacks & likes.</p>
+                </div>
+
+                {/* Session-based weight */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-semibold">
+                    <span className="text-gray-300">Session-Based (Decay)</span>
+                    <span className="text-[#1db954] font-mono">
+                      {Math.round((recommendationWeights.session / (recommendationWeights.content + recommendationWeights.collaborative + recommendationWeights.session || 1)) * 100)}%
+                    </span>
+                  </div>
+                  <input 
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={recommendationWeights.session}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      updateWeights({ ...recommendationWeights, session: val });
+                    }}
+                    className="w-full accent-[#1db954] cursor-pointer bg-neutral-800 h-1.5 rounded-lg appearance-none"
+                  />
+                  <p className="text-[10px] text-gray-400">Gives preference to matching your last 5 session tracks.</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Dynamic Personalized Recommendations ("Discover Weekly") */}
           {recommendations && (

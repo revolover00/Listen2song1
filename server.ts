@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db.js';
+import { RecommenderEngine } from './server/recommender.js';
 import dotenv from 'dotenv';
 import { Track } from './src/types.js';
 
@@ -352,8 +353,76 @@ app.get('/api/recommendations', (req, res) => {
     return res.status(400).json({ error: 'userId is required' });
   }
 
-  const result = db.getRecommendations(userId);
-  res.json(result);
+  // Parse custom weights from query parameters
+  const wContent = parseFloat(req.query.wContent as string);
+  const wCollab = parseFloat(req.query.wCollab as string);
+  const wSession = parseFloat(req.query.wSession as string);
+
+  const weights = {
+    content: isNaN(wContent) ? 0.4 : wContent,
+    collaborative: isNaN(wCollab) ? 0.4 : wCollab,
+    session: isNaN(wSession) ? 0.2 : wSession
+  };
+
+  const allTracks = db.getTracks();
+  const allHistory = db.getAllListeningHistory();
+  const allLikes = db.getAllLikes();
+
+  const blendedResult = RecommenderEngine.generateBlendedRecommendations(
+    userId,
+    allTracks,
+    allHistory,
+    allLikes,
+    weights
+  );
+
+  // Still calculate the contextual session mix for UI visual separation
+  const userHistory = db.getListeningHistory(userId);
+  let contextualMix: Track[] = [];
+
+  if (userHistory.length > 0) {
+    const lastTrackId = userHistory[userHistory.length - 1].trackId;
+    const lastTrack = db.getTrack(lastTrackId);
+    if (lastTrack) {
+      const lastTrackTags = new Set(lastTrack.tags);
+      const similarTracksScored = allTracks
+        .filter(t => t.id !== lastTrackId)
+        .map(t => {
+          let matches = 0;
+          t.tags.forEach(tag => {
+            if (lastTrackTags.has(tag)) matches++;
+          });
+          return { track: t, matches };
+        });
+
+      similarTracksScored.sort((a, b) => b.matches - a.matches);
+      contextualMix = similarTracksScored.slice(0, 6).map(item => item.track);
+    }
+  }
+
+  if (contextualMix.length < 3) {
+    contextualMix = [...allTracks]
+      .sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+      .slice(0, 6);
+  }
+
+  res.json({
+    discoverWeekly: blendedResult.tracks,
+    contextualMix: contextualMix,
+    recommendedArtists: [
+      {
+        name: "Amr Diab",
+        coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&q=80",
+        tags: ["arabic", "pop", "classic"]
+      },
+      {
+        name: "Fairouz",
+        coverUrl: "https://images.unsplash.com/photo-1487180142328-054b783fc471?w=400&q=80",
+        tags: ["legendary", "classical", "tarab"]
+      }
+    ],
+    reason: blendedResult.reason
+  });
 });
 
 // --- ListenBrainz Scrobble & Labs API ---
