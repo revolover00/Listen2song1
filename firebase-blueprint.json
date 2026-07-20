@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "Track": {
+      "title": "Track",
+      "description": "An audio track cached in the database",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "artist": { "type": "string" },
+        "album": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "duration": { "type": "integer" },
+        "youtubeId": { "type": "string" },
+        "genre": { "type": "string" },
+        "tags": { "type": "array" }
+      },
+      "required": ["id", "title", "artist", "youtubeId"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "A user's liked track entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "trackId": { "type": "string" },
+        "likedAt": { "type": "string" }
+      },
+      "required": ["userId", "trackId", "likedAt"]
+    },
+    "ListeningHistoryEntry": {
+      "title": "ListeningHistoryEntry",
+      "description": "An entry of played track history",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "trackId": { "type": "string" },
+        "listenedAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "trackId", "listenedAt"]
+    },
+    "Playlist": {
+      "title": "Playlist",
+      "description": "A customized user playlist of tracks",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "userId": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "trackIds": { "type": "array" },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "userId", "trackIds"]
+    }
+  },
+  "firestore": {
+    "tracks/{trackId}": {
+      "schema": "Track",
+      "description": "Collection of all system tracks"
+    },
+    "likes/{likeId}": {
+      "schema": "Like",
+      "description": "Collection of tracks liked by users"
+    },
+    "history/{historyId}": {
+      "schema": "ListeningHistoryEntry",
+      "description": "Tracks playback history records"
+    },
+    "playlists/{playlistId}": {
+      "schema": "Playlist",
+      "description": "Custom playlists created by users"
+    }
+  }
+}

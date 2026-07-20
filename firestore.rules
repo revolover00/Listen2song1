@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- REUSABLE SECURITY HELPERS ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- SCHEMA VALIDATION BLUEPRINTS ---
+    function isValidTrack(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.title is string && data.title.size() <= 200
+        && data.artist is string && data.artist.size() <= 150
+        && data.youtubeId is string && data.youtubeId.size() <= 50;
+    }
+
+    function isValidLike(data) {
+      return data.userId is string && data.userId.size() <= 100
+        && data.trackId is string && data.trackId.size() <= 100
+        && data.likedAt is string;
+    }
+
+    function isValidHistory(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.userId is string && data.userId.size() <= 100
+        && data.trackId is string && data.trackId.size() <= 100
+        && data.listenedAt is string;
+    }
+
+    function isValidPlaylist(data) {
+      return data.id is string && data.id.size() <= 100
+        && data.name is string && data.name.size() <= 100
+        && data.userId is string && data.userId.size() <= 100
+        && data.trackIds is list;
+    }
+
+    // --- COLLECTION RULES ---
+
+    // 1. Tracks (Publicly readable, writeable by signed-in users caching a song)
+    match /tracks/{trackId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidTrack(incoming());
+      allow update, delete: if false; // Tracks are immutable once cached
+    }
+
+    // 2. Likes (User-specific likes)
+    match /likes/{likeId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() 
+        && incoming().userId == request.auth.uid 
+        && isValidLike(incoming());
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow update: if false; // Likes are not updated, only created/deleted
+    }
+
+    // 3. Play History (User-specific history)
+    match /history/{historyId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn() 
+        && incoming().userId == request.auth.uid 
+        && isValidHistory(incoming());
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // 4. Playlists (Owned by users, optionally public)
+    match /playlists/{playlistId} {
+      allow read: if isSignedIn() && (
+        existing().userId == request.auth.uid || existing().isPublic == true
+      );
+      allow create: if isSignedIn() 
+        && incoming().userId == request.auth.uid 
+        && isValidPlaylist(incoming());
+      allow update: if isSignedIn() 
+        && existing().userId == request.auth.uid 
+        && incoming().userId == request.auth.uid // Ownership lock
+        && isValidPlaylist(incoming());
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+  }
+}
