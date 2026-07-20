@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Colors */
+  --color-spotify-green: #1DB954;
+  --color-spotify-dark: #121212;
+  --color-spotify-light: #181818;
+  --color-spotify-highlight: #282828;
+}
+
+/* Custom styles and smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #282828;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1DB954;
+}
+
+body {
+  background-color: #121212;
+  color: #ededef;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+/* Spatial TV focus ring animation */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(29, 185, 84, 0.4);
+    border-color: #1DB954;
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(29, 185, 84, 0.8);
+    border-color: #1ed760;
+  }
+}
+
+.tv-focus-active {
+  animation: pulseGlow 1.8s infinite ease-in-out;
+  transform: scale(1.04);
+  z-index: 10;
+  border-width: 3px;
+  outline: none;
+}
+

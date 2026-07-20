@@ -1,0 +1,6 @@
+{
+  "name": "listen2song",
+  "description": "A premium, zero-cost, server-side cached music streaming platform inspired by Spotify, powered by hidden YouTube playback, MusicBrainz, and ListenBrainz.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
